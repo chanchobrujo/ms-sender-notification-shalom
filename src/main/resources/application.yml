@@ -1,0 +1,25 @@
+server:
+  port: 8002
+
+spring:
+  application:
+    name: ms-sender-notification
+  redis-listener:
+    uri: redis://<redis_password>@<host_redis>:<redis_port>
+    key: notification:shipping
+    group: shipping_shalom
+  mail:
+    port: 587
+    host: smtp.gmail.com
+    username: <sender_mail_user>
+    password: <sender_mail_password>
+    properties:
+      mail:
+        smtp:
+          auth: true
+          timeout: 5000
+          writetimeout: 5000
+          connectiontimeout: 5000
+          starttls:
+            enable: true
+            required: true
