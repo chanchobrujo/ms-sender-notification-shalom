@@ -4,15 +4,12 @@ import com.shalom.sender_notification.properties.RedisProperties;
 import com.shalom.sender_notification.service.sender._message.MesageService;
 import io.lettuce.core.Consumer;
 import io.lettuce.core.RedisBusyException;
-import io.lettuce.core.StreamMessage;
 import io.lettuce.core.XReadArgs;
 import io.lettuce.core.api.sync.RedisCommands;
+import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Map;
 
 import static io.lettuce.core.XReadArgs.StreamOffset.from;
 import static io.lettuce.core.XReadArgs.StreamOffset.lastConsumed;
@@ -42,22 +39,25 @@ public class ListenerNotificationService implements IListenerNotificationService
     }
 
     private void listenerNotification() {
-        while (true) {
+        try {
             Consumer<String> consumer = Consumer.from(this.getGroup(), "consumer_1");
             XReadArgs.StreamOffset<String> sds = lastConsumed(this.getKey());
-            List<StreamMessage<String, String>> messages = this.lettuceRedisConnection.xreadgroup(consumer, sds);
-            messages.forEach(message -> {
-                Map<String, String> body = message.getBody();
-                log.info("NOTIFICACION RECIBIDA: ".concat(body.toString()));
-                this.mesageService.send(body);
-                this.lettuceRedisConnection.xack(this.getKey(), this.getGroup(), message.getId());
-            });
+            this.lettuceRedisConnection.xreadgroup(consumer, sds)
+                    .stream()
+                    .map(this.mesageService::send)
+                    .filter(StringUtils::isNotEmpty)
+                    .forEach(id -> this.lettuceRedisConnection.xack(this.getKey(), this.getGroup(), id));
+        } catch (Exception e) {
+            log.error(" ".concat("Error al procesar notificaciones."));
+            log.error(" ".concat(e.getMessage()));
         }
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         this.createGroup();
-        this.listenerNotification();
+        while (true) {
+            this.listenerNotification();
+        }
     }
 }
