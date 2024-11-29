@@ -11,6 +11,5 @@ import java.util.Map;
 public class MessageTextService implements ISenderService {
     @Override
     public void send(Map<String, String> message) {
-        log.info("mensaje de texto xd");
     }
 }

@@ -21,30 +21,22 @@ public class MailService implements ISenderService {
     private JavaMailSender sender;
 
     @Override
-    public void send(Map<String, String> messageBody) {
+    public void send(Map<String, String> messageBody) throws MessagingException {
         if (!messageBody.isEmpty()) {
             var text = ofNullable(messageBody.get("text"))
-                    .orElseThrow(() -> new BusinessException("Notificacion invalida."));
+                    .orElseThrow(() -> new BusinessException("No podemos enviar un email sin texto."));
             var email = ofNullable(messageBody.get("email"))
-                    .orElseThrow(() -> new BusinessException("Notificacion invalida."));
+                    .orElseThrow(() -> new BusinessException("No podemos enviar un email sin correo."));
             var subject = ofNullable(messageBody.get("subject"))
-                    .orElseThrow(() -> new BusinessException("Notificacion invalida."));
+                    .orElseThrow(() -> new BusinessException("No podemos enviar un email sin asunto."));
 
-            try {
-                MimeMessage message = this.sender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message);
+            MimeMessage message = this.sender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message);
 
-                helper.setTo(email);
-                helper.setText(text, false);
-                helper.setSubject(subject);
-                this.sender.send(message);
-            } catch (MessagingException e) {
-                log.error(e.getMessage());
-            } catch (Exception e) {
-                log.error("ERROR AL ENVIAR MENSAJE DE TEXTO");
-                log.error(e.getMessage());
-                log.error(messageBody.toString());
-            }
+            helper.setTo(email);
+            helper.setText(text, true);
+            helper.setSubject(subject);
+            this.sender.send(message);
         }
     }
 }

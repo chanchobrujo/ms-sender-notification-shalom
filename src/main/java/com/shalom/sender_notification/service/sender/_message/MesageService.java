@@ -1,12 +1,11 @@
 package com.shalom.sender_notification.service.sender._message;
 
 import com.shalom.sender_notification.service.sender.ISenderService;
+import io.lettuce.core.StreamMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -24,9 +23,19 @@ public class MesageService {
     @Qualifier(value = "WhatsappService")
     private ISenderService whatsappService;
 
-    public void send(Map<String, String> message) {
-        this.mailService.send(message);
-        this.whatsappService.send(message);
-        this.messageTextService.send(message);
+    public String send(StreamMessage<String, String> streamMessage) {
+        var id = streamMessage.getId();
+        var message = streamMessage.getBody();
+
+        try {
+            this.mailService.send(message);
+            this.whatsappService.send(message);
+            this.messageTextService.send(message);
+            return id;
+        } catch (Exception e) {
+            log.error(" ".concat("Error al procesar el mensaje{"+id+"}: ").concat(message.toString()));
+            log.error(" ".concat(e.getMessage()));
+        }
+        return null;
     }
 }
